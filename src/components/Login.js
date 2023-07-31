@@ -1,28 +1,53 @@
-import React from 'react'
+import React, { useContext } from 'react'
 import { useFormik } from 'formik'
 import { useNavigate } from "react-router-dom"
+import { toast, Toaster } from "react-hot-toast"
+import { chatContext } from '../context/ChatContext'
 
 const Login = () => {
+    // contect data
+    const { handleLogin, activeUser } = useContext(chatContext)
+    // navigation
+    const navigate = useNavigate()
+    // email validation
+    function isValidEmail(e) {
+        const re = /\S+@\S+\.\S+/;
+        return re.test(e);
+    }
     // using formik
+
     const formik = useFormik({
         initialValues: {
-            username: "",
             email: "",
             password: ""
         },
         validateOnChange: false,
         validateOnBlur: false,
         validate: async (values) => {
-
+            const error = {}
+            if (!values.email) {
+                error.email = toast.error('email required')
+            } else if (!isValidEmail(values.email)) {
+                error.email = toast.error('invalid email')
+            } else if (values.password.length < 6) {
+                error.password = toast.error('weak password')
+            }
+            return error
         },
         onSubmit: async (values) => {
-
+            handleLogin(values.email, values.password)
+            if (activeUser.uid) {
+                setTimeout(() => {
+                    navigate('/dashboard')
+                }, 1000);
+            }
         }
     })
     // navigation
-    const navigate = useNavigate()
+
     return (
         <div className='w-full'>
+            <Toaster position='top-center' reverseOrder={false}></Toaster>
             <h5 className='py-5 text-center font-semibold text-sm capitalize'>Login</h5>
             <form onSubmit={formik.handleSubmit} className='flex flex-col items-center justify-start'>
                 <input type='email' id='email' onChange={formik.handleChange}

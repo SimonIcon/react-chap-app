@@ -1,33 +1,66 @@
 import { useFormik } from 'formik'
-import React from 'react'
+import React, { useContext, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import addProfile from "../config/image"
+import styles from "../styles/register.module.scss"
+import { chatContext } from '../context/ChatContext'
+import { toast, Toaster } from 'react-hot-toast'
+
+
 const Register = () => {
-    // uploading profile pic image
-    const uploadImage = (e) => {
-        e.preventDefault()
-    }
+    // chat context variables
+    const { registerUser, uploadingStatus } = useContext(chatContext)
     // using formik
+    const [profileImg, setProfileImg] = useState([])
+    const handleFileChange = (e) => {
+        const selectedFiles = e.target.files;
+        setProfileImg(selectedFiles); // Save the selected files array to state
+    };
+    // validating email
+    function isValidEmail(e) {
+        const re = /\S+@\S+\.\S+/;
+        return re.test(e);
+    }
+
     const formik = useFormik({
         initialValues: {
             username: "",
             email: "",
             password: "",
-            profileImg: ""
         },
         validateOnChange: false,
         validateOnBlur: false,
         validate: async (values) => {
+            const error = {}
+            if (!values.email) {
+                error.email = toast.error('email required')
+            } else if (!isValidEmail(values.email)) {
+                error.email = toast.error('invalid email')
+            } else if (!values.username || values.username === "") {
+                error.username = toast.error('username required')
+            } else if (values.password.length < 6) {
+                error.password = toast.error('weak password')
+            } else if (profileImg[0].name.length < 1) {
+                error.profileImg = toast.error('profile image required')
+            }
 
+            return error
         },
         onSubmit: async (values) => {
+            registerUser(values.email, values.password, values.username, profileImg[0].name)
+            setTimeout(() => {
+                navigate('/')
+            }, 2000);
 
-        }
+        },
+
     })
 
     // navigation
     const navigate = useNavigate()
     return (
         <div className='w-full'>
+            <Toaster position='top-center' reverseOrder={false}></Toaster>
             <h5 className='py-2 text-center font-semibold text-sm capitalize'>Register</h5>
             <form onSubmit={formik.handleSubmit} className='flex flex-col items-center justify-center'>
                 <input type='text' id='username' onChange={formik.handleChange}
@@ -44,10 +77,24 @@ const Register = () => {
                 />
                 <div className='w-[80%] mt-3  text-black'>
                     <label htmlFor='profileImg'
-                        className='font-semibold text-sm w-full hover:underline text-center px-5 py-2 hover:text-pink-400 rounded-md'
-                    >upload your profile image</label>
-                    <input type='file' id='profileImg' value={formik.values.profileImg}
-                        onChange={uploadImage}
+                        className='flex flex-row items-center justify-evenly'
+                    >
+                        <img src={addProfile} alt='add profile'
+                            className={styles.image} />
+                        <span className='text-black text-sm font-semibold w-[50%]'>
+                            {
+                                uploadingStatus < 0 ? (<span>upload your profile image</span>) : (<div>
+                                    {uploadingStatus > 99 ? (<span className='text-green-600'>uploading complete</span>) : (
+                                        <span className={`px-2 py-3 w-${uploadingStatus} bg-green-500`}>uploading {uploadingStatus}</span>
+                                    )}
+                                </div>
+                                )
+                            }
+
+                        </span>
+                    </label>
+                    <input type='file' id='profileImg'
+                        onChange={handleFileChange}
                         className='hidden' />
 
                 </div>
